@@ -20,6 +20,10 @@ botadapter = BotFrameworkAdapter(botsettings)
 CONMEMORY = ConversationState(MemoryStorage())
 botdialog = SampleAnimationCard()
 
+ 
+
+    
+
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
     # Main bot message handler.
@@ -32,7 +36,7 @@ async def messages(req: Request) -> Response:
     auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
 
     try:
-        response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
+        response = await botadapter.process_activity(activity, auth_header, botdialog.on_turn)
         if response:
             return json_response(data=response.body, status=response.status)
         return Response(status=201)
