@@ -1,8 +1,14 @@
 from flask import Flask,request,Response
 from botbuilder.core import BotFrameworkAdapter,BotFrameworkAdapterSettings,TurnContext,ConversationState,MemoryStorage
-from botbuilder.schema import Activity
+ 
 import asyncio
 from pic_button import SampleAnimationCard
+
+from aiohttp import web
+from aiohttp.web import Request, Response, json_response
+
+from botbuilder.core.integration import aiohttp_error_middleware
+from botbuilder.schema import Activity, ActivityTypes
 
 
 app = Flask(__name__)
@@ -14,37 +20,31 @@ botadapter = BotFrameworkAdapter(botsettings)
 CONMEMORY = ConversationState(MemoryStorage())
 botdialog = SampleAnimationCard()
 
-
-@app.route("/api/messages",methods=["POST"])
-def messages():
-    if "application/json" in request.headers["content-type"]:
-        body = request.json
+# Listen for incoming requests on /api/messages
+async def messages(req: Request) -> Response:
+    # Main bot message handler.
+    if "application/json" in req.headers["Content-Type"]:
+        body = await req.json()
     else:
-        return Response(status = 415)
+        return Response(status=415)
 
     activity = Activity().deserialize(body)
-
-    auth_header = (request.headers["Authorization"] if "Authorization" in request.headers else "")
-
-    async def call_fun(turncontext):
-        await botdialog.on_turn(turncontext)
-
-    task = loop.create_task(
-        botadapter.process_activity(activity,auth_header,call_fun)
-        )
-    loop.run_until_complete(task)
-    
-def init_func(argv):
-    APP = web.Application(middlewares=[aiohttp_error_middleware])
-    APP.router.add_post("/api/messages", messages)
-    return APP
-
-
-if __name__ == "__main__":
-    APP = init_func(None)
+    auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
 
     try:
-        web.run_app(APP, host="https://bob1020a.azurewebsites.net", port=CONFIG.PORT)
+        response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
+        if response:
+            return json_response(data=response.body, status=response.status)
+        return Response(status=201)
+    except Exception as exception:
+        raise exception
+
+
+APP = web.Application(middlewares=[aiohttp_error_middleware])
+APP.router.add_post("/api/messages", messages)
+
+if __name__ == "__main__":
+    try:
+        web.run_app(APP, host="localhost", port=CONFIG.PORT)
     except Exception as error:
         raise error
-
