@@ -34,6 +34,10 @@ def messages():
         )
     loop.run_until_complete(task)
 
+APP = web.Application(middlewares=[aiohttp_error_middleware])
+APP.router.add_post("/api/messages", messages)
 
-if __name__ == '__main__':
-    app.run('localhost',3978)
+if __name__ == "__main__":
+    try:
+        web.run_app(APP, host="localhost", port=CONFIG.PORT)
+    except Exception as err
