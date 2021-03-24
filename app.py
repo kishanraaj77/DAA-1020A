@@ -36,4 +36,4 @@ def messages():
 
 
 if __name__ == '__main__':
-    app.run('https://bob1020a.azurewebsites.net',3978)
+    app.run('https://bob1020a.azurewebsites.net/api/messages',3978)
